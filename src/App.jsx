@@ -1,9 +1,10 @@
-import UploadForm from "./components/UploadForm";
+// src/App.jsx
+import React from 'react';
+import UploadForm from './components/UploadForm';
 
 function App() {
   return (
-    <div>
-      <h1>🧠 Slide2LaTeX</h1>
+    <div className="App">
       <UploadForm />
     </div>
   );
