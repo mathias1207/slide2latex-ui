@@ -573,4 +573,54 @@ button:disabled {
 
 .margin-input input[type="number"] {
   -moz-appearance: textfield;
+}
+
+.file-input-container {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.file-input-container input[type="file"] {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+}
+
+.custom-file-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background-color: white;
+  border: 2px dashed #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
+.custom-file-input:hover {
+  border-color: var(--accent-color);
+  background-color: rgba(0, 184, 148, 0.05);
+}
+
+.custom-file-input span {
+  font-size: 1rem;
+  color: #666;
+}
+
+.custom-file-input .file-icon {
+  font-size: 1.2rem;
+  color: var(--accent-color);
+}
+
+.file-name {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--accent-color);
+  text-align: center;
 } 

@@ -4,6 +4,7 @@ import { PDFDocument } from 'pdf-lib';
 import './UploadForm.css';
 import { themes } from '../themes';
 import { boxStyles as defaultBoxStyles } from '../styles';
+import { FaUpload } from 'react-icons/fa';
 
 
 // URL du backend
@@ -24,6 +25,33 @@ const LoadingScreen = ({ status, progress, timeRemaining }) => {
       <div className="progress-bar">
         <div className="progress-fill" style={{ width: `${progress}%` }} />
       </div>
+    </div>
+  );
+};
+
+const FileInput = ({ onChange }) => {
+  const [fileName, setFileName] = useState('Aucun fichier choisi');
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFileName(file.name);
+      onChange(e);
+    }
+  };
+
+  return (
+    <div className="file-input-container">
+      <label className="custom-file-input">
+        <FaUpload className="file-icon" />
+        <span>Choisir un fichier PDF</span>
+        <input
+          type="file"
+          accept=".pdf"
+          onChange={handleFileChange}
+        />
+      </label>
+      <div className="file-name">{fileName}</div>
     </div>
   );
 };
@@ -370,23 +398,8 @@ function UploadForm() {
         )}
 
         <div className="form-group">
-          <label htmlFor="file">Fichier PDF</label>
-          <input
-            type="file"
-            id="file"
-            accept=".pdf"
-            onChange={(e) => setFile(e.target.files[0])}
-          />
-          {file && (
-            <div className="file-info">
-              <p>Nom du fichier : {file.name}</p>
-              <p>Taille : {(file.size / 1024 / 1024).toFixed(2)} MB</p>
-              {pageCount > 0 && <p>Nombre de pages : {pageCount}</p>}
-              {estimatedTime > 0 && (
-                <p>Temps estimé : {formatTime(estimatedTime)}</p>
-              )}
-            </div>
-          )}
+          <label>Fichier PDF</label>
+          <FileInput onChange={(e) => setFile(e.target.files[0])} />
         </div>
 
         <div className="form-group">
