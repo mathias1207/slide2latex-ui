@@ -188,32 +188,57 @@ function UploadForm() {
   };
 
   const handleDownload = async () => {
-    if (!response?.file_id) return;
+    if (!response?.file_id) {
+      setError('Aucun fichier à télécharger');
+      return;
+    }
     
     try {
       setStatus('Téléchargement du fichier...');
-      const res = await fetchWithTimeout(`https://slide2latex-backend.onrender.com/download/${response.file_id}`, {
-        method: 'GET'
-      }, 30000); // 30 secondes de timeout pour le téléchargement
+      const res = await fetchWithTimeout(
+        `https://slide2latex-backend.onrender.com/download/${response.file_id}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/pdf'
+          }
+        },
+        30000
+      );
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.detail || `Erreur serveur: ${res.status}`);
+        throw new Error(errorData.error || `Erreur lors du téléchargement: ${res.status}`);
       }
-      
+
+      // Récupérer le type de contenu et le nom du fichier
+      const contentType = res.headers.get('content-type');
+      const contentDisposition = res.headers.get('content-disposition');
+      let filename = downloadFileName;
+
+      if (contentDisposition) {
+        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+
+      // Créer le blob et le lien de téléchargement
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = downloadFileName;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+
       setStatus('Téléchargement terminé !');
     } catch (err) {
-      console.error('Download failed', err);
+      console.error('Erreur lors du téléchargement:', err);
       setError(err.message);
+      setStatus('Erreur lors du téléchargement');
     }
   };
 
