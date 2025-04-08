@@ -2,9 +2,31 @@
 import React, { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import './UploadForm.css';
+import { themes } from '../themes';
+import { boxStyles as defaultBoxStyles } from '../styles';
+
 
 // URL du backend
 const BACKEND_URL = 'http://localhost:8000';
+
+const LoadingScreen = ({ status, progress, timeRemaining }) => {
+  return (
+    <div className="loading-screen">
+      <div className="pen-animation" />
+      <div className="loading-text">
+        {status}
+        {timeRemaining > 0 && (
+          <div>
+            Temps restant estimé : {formatTime(timeRemaining)}
+          </div>
+        )}
+      </div>
+      <div className="progress-bar">
+        <div className="progress-fill" style={{ width: `${progress}%` }} />
+      </div>
+    </div>
+  );
+};
 
 function UploadForm() {
   const [file, setFile] = useState(null);
@@ -33,6 +55,48 @@ function UploadForm() {
   const [pageCount, setPageCount] = useState(0);
   const [estimatedTime, setEstimatedTime] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [currentTheme, setCurrentTheme] = useState('classique');
+  const [boxOptions, setBoxOptions] = useState({
+    retenir: {
+      titleFont: "lmr",
+      contentFont: "lmr",
+      icon: "\\faBookmark",
+      border: "boxrule=1pt",
+      background: ""
+    },
+    intuition: {
+      titleFont: "lmr",
+      contentFont: "lmr",
+      icon: "\\faLightbulb",
+      border: "boxrule=1pt",
+      background: ""
+    },
+    vulgarisation: {
+      titleFont: "lmr",
+      contentFont: "lmr",
+      icon: "\\faComment",
+      border: "boxrule=1pt",
+      background: ""
+    },
+    recap: {
+      titleFont: "lmr",
+      contentFont: "lmr",
+      icon: "\\faClipboardList",
+      border: "boxrule=1pt",
+      background: ""
+    }
+  });
+
+  // Ajout des états pour les options de mise en page
+  const [pageFormat, setPageFormat] = useState('a4');
+  const [margins, setMargins] = useState({
+    top: '2.5',
+    right: '2.5',
+    bottom: '2.5',
+    left: '2.5'
+  });
+  const [fontSize, setFontSize] = useState('12');
+  const [paragraphSpacing, setParagraphSpacing] = useState('1.0');
 
   // Fonction pour compter les pages du PDF
   const countPages = async (file) => {
@@ -154,6 +218,15 @@ function UploadForm() {
     formData.append('include_recap', includeRecap);
     formData.append('box_styles', JSON.stringify(boxStyles));
     formData.append('vulgarization_level', vulgarizationLevel);
+    
+    // Ajout des options de mise en page
+    formData.append('layout_options', JSON.stringify({
+      page_format: pageFormat,
+      margins: margins,
+      font_size: fontSize,
+      paragraph_spacing: paragraphSpacing
+    }));
+    formData.append('box_options', JSON.stringify(boxOptions));
 
     setLoading(true);
     setProgress(0);
@@ -259,60 +332,81 @@ function UploadForm() {
     }
   };
 
+  // Fonction pour appliquer un thème
+  const applyTheme = (themeKey) => {
+    setCurrentTheme(themeKey);
+    setBoxStyles(themes[themeKey].styles);
+  };
+
+  const handleBoxOptionChange = (boxType, optionType, value) => {
+    setBoxOptions(prev => ({
+      ...prev,
+      [boxType]: {
+        ...prev[boxType],
+        [optionType]: value
+      }
+    }));
+  };
+
   return (
     <div className="form-container">
-      <form onSubmit={handleSubmit} className="upload-form">
-        <h2>Convertir un cours PDF</h2>
-
+      {loading && (
+        <LoadingScreen
+          status={status}
+          progress={progress}
+          timeRemaining={timeRemaining}
+        />
+      )}
+      <form className="upload-form" onSubmit={handleSubmit}>
+        <h2>Générateur de polycopié LaTeX</h2>
+        
         {error && (
           <div className="error-message">
             {error}
-            <p className="error-suggestion">
-              Si le problème persiste, essayez de :
-              <ul>
-                <li>Réduire la taille du fichier PDF</li>
-                <li>Attendre quelques minutes avant de réessayer</li>
-                <li>Vérifier votre connexion internet</li>
-              </ul>
-            </p>
-          </div>
-        )}
-
-        {file && !loading && (
-          <div className="file-info">
-            <p>Nombre de pages : {pageCount}</p>
-            <p>Temps estimé : {formatTime(estimatedTime)}</p>
-            <p>Fichier de sortie : {downloadFileName}</p>
+            <div className="error-suggestion">
+              Essayez de rafraîchir la page ou de réessayer dans quelques instants.
+            </div>
           </div>
         )}
 
         <div className="form-group">
-          <label className="file-input-label">
-            <span>Choisir un fichier PDF</span>
-            <input 
-              type="file" 
-              accept="application/pdf" 
-              onChange={(e) => setFile(e.target.files[0])}
-              className="file-input"
-            />
-          </label>
-          {file && <p className="file-name">{file.name}</p>}
+          <label htmlFor="file">Fichier PDF</label>
+          <input
+            type="file"
+            id="file"
+            accept=".pdf"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+          {file && (
+            <div className="file-info">
+              <p>Nom du fichier : {file.name}</p>
+              <p>Taille : {(file.size / 1024 / 1024).toFixed(2)} MB</p>
+              {pageCount > 0 && <p>Nombre de pages : {pageCount}</p>}
+              {estimatedTime > 0 && (
+                <p>Temps estimé : {formatTime(estimatedTime)}</p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="form-group">
+          <label htmlFor="courseTitle">Titre du cours</label>
           <input
             type="text"
-            placeholder="Titre du cours"
+            id="courseTitle"
             value={courseTitle}
             onChange={(e) => setCourseTitle(e.target.value)}
             required
-            className="text-input"
           />
         </div>
 
         <div className="form-group">
-          <label>Langue source :</label>
-          <select value={sourceLang} onChange={(e) => setSourceLang(e.target.value)} className="select-input">
+          <label htmlFor="sourceLang">Langue source</label>
+          <select
+            id="sourceLang"
+            value={sourceLang}
+            onChange={(e) => setSourceLang(e.target.value)}
+          >
             <option value="french">Français</option>
             <option value="english">Anglais</option>
             <option value="hebrew">Hébreu</option>
@@ -320,269 +414,516 @@ function UploadForm() {
         </div>
 
         <div className="form-group">
-          <label>Langue cible :</label>
-          <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)} className="select-input">
+          <label htmlFor="targetLang">Langue cible</label>
+          <select
+            id="targetLang"
+            value={targetLang}
+            onChange={(e) => setTargetLang(e.target.value)}
+          >
             <option value="french">Français</option>
             <option value="english">Anglais</option>
             <option value="hebrew">Hébreu</option>
           </select>
         </div>
 
-        <div className="form-group">
-          <h3>Options de génération</h3>
+        {/* Nouvelle section pour les options de mise en page */}
+        <div className="layout-options">
+          <h3>Options de mise en page</h3>
           
-          <div className="checkbox-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={includeIntuition}
-                onChange={(e) => setIncludeIntuition(e.target.checked)}
-              />
-              Inclure des boîtes "Intuition"
-            </label>
-            {includeIntuition && (
-              <select
-                value={boxStyles.intuition}
-                onChange={(e) => setBoxStyles({...boxStyles, intuition: e.target.value})}
-                className="select-input"
-              >
-                <option value="green">Vert (Classique)</option>
-                <option value="yellow">Jaune</option>
-                <option value="blue">Bleu</option>
-                <option value="red">Rouge</option>
-                <option value="purple">Violet</option>
-                <option value="orange">Orange</option>
-              </select>
-            )}
+          <div className="form-group">
+            <label htmlFor="pageFormat">Format de page</label>
+            <select
+              id="pageFormat"
+              value={pageFormat}
+              onChange={(e) => setPageFormat(e.target.value)}
+              className="select-input"
+            >
+              <option value="a4">A4 (210 × 297 mm)</option>
+              <option value="letter">Letter (216 × 279 mm)</option>
+              <option value="a5">A5 (148 × 210 mm)</option>
+              <option value="b5">B5 (176 × 250 mm)</option>
+            </select>
           </div>
 
-          <div className="checkbox-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={includeRetenir}
-                onChange={(e) => setIncludeRetenir(e.target.checked)}
-              />
-              Inclure des boîtes "À retenir"
-            </label>
-            {includeRetenir && (
-              <select
-                value={boxStyles.retenir}
-                onChange={(e) => setBoxStyles({...boxStyles, retenir: e.target.value})}
-                className="select-input"
-              >
-                <option value="yellow">Jaune (Classique)</option>
-                <option value="green">Vert</option>
-                <option value="blue">Bleu</option>
-                <option value="red">Rouge</option>
-                <option value="purple">Violet</option>
-                <option value="orange">Orange</option>
-              </select>
-            )}
-          </div>
-
-          <div className="checkbox-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={includeVulgarisation}
-                onChange={(e) => setIncludeVulgarisation(e.target.checked)}
-              />
-              Inclure des boîtes "Vulgarisation"
-            </label>
-            {includeVulgarisation && (
-              <div className="vulgarization-options">
-                <select
-                  value={boxStyles.vulgarisation}
-                  onChange={(e) => setBoxStyles({...boxStyles, vulgarisation: e.target.value})}
-                  className="select-input"
-                >
-                  <option value="blue">Bleu (Classique)</option>
-                  <option value="green">Vert</option>
-                  <option value="yellow">Jaune</option>
-                  <option value="red">Rouge</option>
-                  <option value="purple">Violet</option>
-                  <option value="orange">Orange</option>
-                </select>
-                <select
-                  value={vulgarizationLevel}
-                  onChange={(e) => setVulgarizationLevel(Number(e.target.value))}
-                  className="select-input"
-                >
-                  <option value={1}>Niveau 1 - Minimal</option>
-                  <option value={2}>Niveau 2 - Léger</option>
-                  <option value={3}>Niveau 3 - Modéré</option>
-                  <option value={4}>Niveau 4 - Élevé</option>
-                  <option value={5}>Niveau 5 - Maximal</option>
-                </select>
-              </div>
-            )}
-          </div>
-
-          <div className="checkbox-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={includeRecap}
-                onChange={(e) => setIncludeRecap(e.target.checked)}
-              />
-              Inclure des fiches récapitulatives
-            </label>
-            {includeRecap && (
-              <select
-                value={boxStyles.recap}
-                onChange={(e) => setBoxStyles({...boxStyles, recap: e.target.value})}
-                className="select-input"
-              >
-                <option value="purple">Violet (Classique)</option>
-                <option value="green">Vert</option>
-                <option value="blue">Bleu</option>
-                <option value="red">Rouge</option>
-                <option value="yellow">Jaune</option>
-                <option value="orange">Orange</option>
-              </select>
-            )}
-          </div>
-        </div>
-
-        <div className="box-preview">
-          <h4>Prévisualisation :</h4>
-          <div className="preview-container">
-            {includeIntuition && (
-              <div 
-                className="preview-box"
-                style={{
-                  backgroundColor: `${boxStyles.intuition}15`,
-                  borderColor: `${boxStyles.intuition}80`,
-                  borderLeft: `4px solid ${boxStyles.intuition}`
-                }}
-              >
-                <div className="preview-title" style={{ color: `${boxStyles.intuition}80` }}>
-                  <i className="fas fa-lightbulb"></i> Intuition
-                </div>
-                <div className="preview-content">
-                  Ceci est un exemple de boîte "Intuition"
-                </div>
-              </div>
-            )}
-
-            {includeRetenir && (
-              <div 
-                className="preview-box"
-                style={{
-                  backgroundColor: `${boxStyles.retenir}15`,
-                  borderColor: `${boxStyles.retenir}80`,
-                  borderLeft: `4px solid ${boxStyles.retenir}`
-                }}
-              >
-                <div className="preview-title" style={{ color: `${boxStyles.retenir}80` }}>
-                  <i className="fas fa-bookmark"></i> À retenir
-                </div>
-                <div className="preview-content">
-                  Ceci est un exemple de boîte "À retenir"
-                </div>
-              </div>
-            )}
-
-            {includeVulgarisation && (
-              <div 
-                className="preview-box"
-                style={{
-                  backgroundColor: `${boxStyles.vulgarisation}15`,
-                  borderColor: `${boxStyles.vulgarisation}80`,
-                  borderLeft: `4px solid ${boxStyles.vulgarisation}`
-                }}
-              >
-                <div className="preview-title" style={{ color: `${boxStyles.vulgarisation}80` }}>
-                  <i className="fas fa-comment"></i> Vulgarisation (Niveau {vulgarizationLevel})
-                </div>
-                <div className="preview-content">
-                  Ceci est un exemple de boîte "Vulgarisation"
-                </div>
-              </div>
-            )}
-
-            {includeRecap && (
-              <div 
-                className="preview-box"
-                style={{
-                  backgroundColor: `${boxStyles.recap}15`,
-                  borderColor: `${boxStyles.recap}80`,
-                  borderLeft: `4px solid ${boxStyles.recap}`
-                }}
-              >
-                <div className="preview-title" style={{ color: `${boxStyles.recap}80` }}>
-                  <i className="fas fa-clipboard-list"></i> Fiche Récapitulative
-                </div>
-                <div className="preview-content">
-                  Ceci est un exemple de fiche récapitulative
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <button 
-          type="submit" 
-          disabled={loading || serverStatus !== 'ready'} 
-          className="submit-button"
-        >
-          {loading ? 'Envoi en cours...' : serverStatus === 'ready' ? 'Envoyer' : 'Serveur en veille...'}
-        </button>
-
-        {loading && (
-          <div className="progress-container">
-            <div className="progress-bar">
-              <div 
-                className="progress-fill" 
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            {uploadProgress > 0 && (
-              <div className="upload-progress">
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill" 
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
-                </div>
-                <p className="progress-text">Progression de l'envoi : {Math.round(uploadProgress)}%</p>
-              </div>
-            )}
-            <p className="progress-status">{status}</p>
-            <p className="progress-hint">
-              Temps restant estimé : {formatTime(timeRemaining)}
-              <br />
-              Le traitement peut prendre plusieurs minutes selon la taille du fichier.
-              Veuillez ne pas fermer cette page pendant le traitement.
-            </p>
-          </div>
-        )}
-
-        {response && (
-          <div className="response-container">
-            <h4>Réponse du serveur :</h4>
-            <pre className="response-pre">{JSON.stringify(response, null, 2)}</pre>
-            
-            <div className="download-section">
-              <div className="form-group">
-                <label>Nom du fichier à télécharger :</label>
+          <div className="margins-group">
+            <h4>Marges (cm)</h4>
+            <div className="margins-grid">
+              <div className="margin-input">
+                <label htmlFor="marginTop">Haut</label>
                 <input
-                  type="text"
-                  value={downloadFileName}
-                  onChange={(e) => setDownloadFileName(e.target.value)}
-                  className="text-input"
-                  placeholder="nom_du_fichier.tex"
+                  type="number"
+                  id="marginTop"
+                  value={margins.top}
+                  onChange={(e) => setMargins({...margins, top: e.target.value})}
+                  min="1"
+                  max="10"
+                  step="0.1"
                 />
               </div>
-              
-              <button 
-                onClick={handleDownload}
-                className="download-button"
-              >
-                Télécharger le fichier .tex
-              </button>
+              <div className="margin-input">
+                <label htmlFor="marginRight">Droite</label>
+                <input
+                  type="number"
+                  id="marginRight"
+                  value={margins.right}
+                  onChange={(e) => setMargins({...margins, right: e.target.value})}
+                  min="1"
+                  max="10"
+                  step="0.1"
+                />
+              </div>
+              <div className="margin-input">
+                <label htmlFor="marginBottom">Bas</label>
+                <input
+                  type="number"
+                  id="marginBottom"
+                  value={margins.bottom}
+                  onChange={(e) => setMargins({...margins, bottom: e.target.value})}
+                  min="1"
+                  max="10"
+                  step="0.1"
+                />
+              </div>
+              <div className="margin-input">
+                <label htmlFor="marginLeft">Gauche</label>
+                <input
+                  type="number"
+                  id="marginLeft"
+                  value={margins.left}
+                  onChange={(e) => setMargins({...margins, left: e.target.value})}
+                  min="1"
+                  max="10"
+                  step="0.1"
+                />
+              </div>
             </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="fontSize">Taille de police (pt)</label>
+            <select
+              id="fontSize"
+              value={fontSize}
+              onChange={(e) => setFontSize(e.target.value)}
+              className="select-input"
+            >
+              <option value="10">10 pt</option>
+              <option value="11">11 pt</option>
+              <option value="12">12 pt</option>
+              <option value="14">14 pt</option>
+              <option value="16">16 pt</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="paragraphSpacing">Espacement des paragraphes</label>
+            <select
+              id="paragraphSpacing"
+              value={paragraphSpacing}
+              onChange={(e) => setParagraphSpacing(e.target.value)}
+              className="select-input"
+            >
+              <option value="1.0">Simple (1.0)</option>
+              <option value="1.15">Confortable (1.15)</option>
+              <option value="1.5">Large (1.5)</option>
+              <option value="2.0">Double (2.0)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="checkbox-group">
+          <div className="checkbox-label">
+            <input
+              type="checkbox"
+              id="includeIntuition"
+              checked={includeIntuition}
+              onChange={(e) => setIncludeIntuition(e.target.checked)}
+            />
+            <label htmlFor="includeIntuition">Inclure les intuitions</label>
+          </div>
+          {includeIntuition && (
+            <div className="box-options">
+              <h4>Personnalisation "Intuition"</h4>
+              <div className="options-grid">
+                <div className="option-group">
+                  <label>Police du titre :</label>
+                  <select
+                    value={boxOptions.intuition.titleFont}
+                    onChange={(e) => handleBoxOptionChange('intuition', 'titleFont', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="lmr">Latin Modern Roman</option>
+                    <option value="phv">Helvetica</option>
+                    <option value="ptm">Times New Roman</option>
+                    <option value="ppl">Palatino</option>
+                    <option value="pbk">Bookman</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Police du contenu :</label>
+                  <select
+                    value={boxOptions.intuition.contentFont}
+                    onChange={(e) => handleBoxOptionChange('intuition', 'contentFont', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="lmr">Latin Modern Roman</option>
+                    <option value="phv">Helvetica</option>
+                    <option value="ptm">Times New Roman</option>
+                    <option value="ppl">Palatino</option>
+                    <option value="pbk">Bookman</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Icône :</label>
+                  <select
+                    value={boxOptions.intuition.icon}
+                    onChange={(e) => handleBoxOptionChange('intuition', 'icon', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="\\faLightbulb">Ampoule</option>
+                    <option value="\\faThoughtBubble">Bulle de pensée</option>
+                    <option value="\\faBrain">Cerveau</option>
+                    <option value="\\faCompass">Boussole</option>
+                    <option value="\\faMagic">Baguette magique</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Style de bordure :</label>
+                  <select
+                    value={boxOptions.intuition.border}
+                    onChange={(e) => handleBoxOptionChange('intuition', 'border', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="boxrule=1pt">Simple (1pt)</option>
+                    <option value="boxrule=2pt,double">Double</option>
+                    <option value="boxrule=1pt,dotted">Pointillés</option>
+                    <option value="boxrule=1pt,dashed">Tirets</option>
+                    <option value="boxrule=3pt">Épais (3pt)</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Arrière-plan :</label>
+                  <select
+                    value={boxOptions.intuition.background}
+                    onChange={(e) => handleBoxOptionChange('intuition', 'background', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="">Uni (défaut)</option>
+                    <option value="grid">Grille</option>
+                    <option value="dots">Points</option>
+                    <option value="crosshatch">Hachures</option>
+                    <option value="gradient">Dégradé</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="checkbox-label">
+            <input
+              type="checkbox"
+              id="includeRetenir"
+              checked={includeRetenir}
+              onChange={(e) => setIncludeRetenir(e.target.checked)}
+            />
+            <label htmlFor="includeRetenir">Inclure les points à retenir</label>
+          </div>
+          {includeRetenir && (
+            <div className="box-options">
+              <h4>Personnalisation "À retenir"</h4>
+              <div className="options-grid">
+                <div className="option-group">
+                  <label>Police du titre :</label>
+                  <select
+                    value={boxOptions.retenir.titleFont}
+                    onChange={(e) => handleBoxOptionChange('retenir', 'titleFont', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="lmr">Latin Modern Roman</option>
+                    <option value="phv">Helvetica</option>
+                    <option value="ptm">Times New Roman</option>
+                    <option value="ppl">Palatino</option>
+                    <option value="pbk">Bookman</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Police du contenu :</label>
+                  <select
+                    value={boxOptions.retenir.contentFont}
+                    onChange={(e) => handleBoxOptionChange('retenir', 'contentFont', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="lmr">Latin Modern Roman</option>
+                    <option value="phv">Helvetica</option>
+                    <option value="ptm">Times New Roman</option>
+                    <option value="ppl">Palatino</option>
+                    <option value="pbk">Bookman</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Icône :</label>
+                  <select
+                    value={boxOptions.retenir.icon}
+                    onChange={(e) => handleBoxOptionChange('retenir', 'icon', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="\\faBookmark">Marque-page</option>
+                    <option value="\\faStar">Étoile</option>
+                    <option value="\\faCheck">Coche</option>
+                    <option value="\\faExclamation">Point d'exclamation</option>
+                    <option value="\\faFlag">Drapeau</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Style de bordure :</label>
+                  <select
+                    value={boxOptions.retenir.border}
+                    onChange={(e) => handleBoxOptionChange('retenir', 'border', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="boxrule=1pt">Simple (1pt)</option>
+                    <option value="boxrule=2pt,double">Double</option>
+                    <option value="boxrule=1pt,dotted">Pointillés</option>
+                    <option value="boxrule=1pt,dashed">Tirets</option>
+                    <option value="boxrule=3pt">Épais (3pt)</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Arrière-plan :</label>
+                  <select
+                    value={boxOptions.retenir.background}
+                    onChange={(e) => handleBoxOptionChange('retenir', 'background', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="">Uni (défaut)</option>
+                    <option value="grid">Grille</option>
+                    <option value="dots">Points</option>
+                    <option value="crosshatch">Hachures</option>
+                    <option value="gradient">Dégradé</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="checkbox-label">
+            <input
+              type="checkbox"
+              id="includeVulgarisation"
+              checked={includeVulgarisation}
+              onChange={(e) => setIncludeVulgarisation(e.target.checked)}
+            />
+            <label htmlFor="includeVulgarisation">Inclure la vulgarisation</label>
+          </div>
+          {includeVulgarisation && (
+            <>
+              <div className="vulgarization-options">
+                <label htmlFor="vulgarizationLevel">Niveau de vulgarisation :</label>
+                <select
+                  id="vulgarizationLevel"
+                  value={vulgarizationLevel}
+                  onChange={(e) => setVulgarizationLevel(parseInt(e.target.value))}
+                  className="select-input"
+                >
+                  <option value="0">Aucune vulgarisation</option>
+                  <option value="1">Niveau 1 - Minimal</option>
+                  <option value="2">Niveau 2 - Léger</option>
+                  <option value="3">Niveau 3 - Modéré</option>
+                  <option value="4">Niveau 4 - Élevé</option>
+                  <option value="5">Niveau 5 - Maximal</option>
+                </select>
+              </div>
+              <div className="box-options">
+                <h4>Personnalisation "Vulgarisation"</h4>
+                <div className="options-grid">
+                  <div className="option-group">
+                    <label>Police du titre :</label>
+                    <select
+                      value={boxOptions.vulgarisation.titleFont}
+                      onChange={(e) => handleBoxOptionChange('vulgarisation', 'titleFont', e.target.value)}
+                      className="select-input"
+                    >
+                      <option value="lmr">Latin Modern Roman</option>
+                      <option value="phv">Helvetica</option>
+                      <option value="ptm">Times New Roman</option>
+                      <option value="ppl">Palatino</option>
+                      <option value="pbk">Bookman</option>
+                    </select>
+                  </div>
+
+                  <div className="option-group">
+                    <label>Police du contenu :</label>
+                    <select
+                      value={boxOptions.vulgarisation.contentFont}
+                      onChange={(e) => handleBoxOptionChange('vulgarisation', 'contentFont', e.target.value)}
+                      className="select-input"
+                    >
+                      <option value="lmr">Latin Modern Roman</option>
+                      <option value="phv">Helvetica</option>
+                      <option value="ptm">Times New Roman</option>
+                      <option value="ppl">Palatino</option>
+                      <option value="pbk">Bookman</option>
+                    </select>
+                  </div>
+
+                  <div className="option-group">
+                    <label>Icône :</label>
+                    <select
+                      value={boxOptions.vulgarisation.icon}
+                      onChange={(e) => handleBoxOptionChange('vulgarisation', 'icon', e.target.value)}
+                      className="select-input"
+                    >
+                      <option value="\\faComment">Bulle de dialogue</option>
+                      <option value="\\faInfoCircle">Information</option>
+                      <option value="\\faQuestionCircle">Question</option>
+                      <option value="\\faBook">Livre</option>
+                      <option value="\\faGraduationCap">Diplôme</option>
+                    </select>
+                  </div>
+
+                  <div className="option-group">
+                    <label>Style de bordure :</label>
+                    <select
+                      value={boxOptions.vulgarisation.border}
+                      onChange={(e) => handleBoxOptionChange('vulgarisation', 'border', e.target.value)}
+                      className="select-input"
+                    >
+                      <option value="boxrule=1pt">Simple (1pt)</option>
+                      <option value="boxrule=2pt,double">Double</option>
+                      <option value="boxrule=1pt,dotted">Pointillés</option>
+                      <option value="boxrule=1pt,dashed">Tirets</option>
+                      <option value="boxrule=3pt">Épais (3pt)</option>
+                    </select>
+                  </div>
+
+                  <div className="option-group">
+                    <label>Arrière-plan :</label>
+                    <select
+                      value={boxOptions.vulgarisation.background}
+                      onChange={(e) => handleBoxOptionChange('vulgarisation', 'background', e.target.value)}
+                      className="select-input"
+                    >
+                      <option value="">Uni (défaut)</option>
+                      <option value="grid">Grille</option>
+                      <option value="dots">Points</option>
+                      <option value="crosshatch">Hachures</option>
+                      <option value="gradient">Dégradé</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="checkbox-label">
+            <input
+              type="checkbox"
+              id="includeRecap"
+              checked={includeRecap}
+              onChange={(e) => setIncludeRecap(e.target.checked)}
+            />
+            <label htmlFor="includeRecap">Inclure les fiches récapitulatives</label>
+          </div>
+          {includeRecap && (
+            <div className="box-options">
+              <h4>Personnalisation "Fiche récapitulative"</h4>
+              <div className="options-grid">
+                <div className="option-group">
+                  <label>Police du titre :</label>
+                  <select
+                    value={boxOptions.recap.titleFont}
+                    onChange={(e) => handleBoxOptionChange('recap', 'titleFont', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="lmr">Latin Modern Roman</option>
+                    <option value="phv">Helvetica</option>
+                    <option value="ptm">Times New Roman</option>
+                    <option value="ppl">Palatino</option>
+                    <option value="pbk">Bookman</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Police du contenu :</label>
+                  <select
+                    value={boxOptions.recap.contentFont}
+                    onChange={(e) => handleBoxOptionChange('recap', 'contentFont', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="lmr">Latin Modern Roman</option>
+                    <option value="phv">Helvetica</option>
+                    <option value="ptm">Times New Roman</option>
+                    <option value="ppl">Palatino</option>
+                    <option value="pbk">Bookman</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Icône :</label>
+                  <select
+                    value={boxOptions.recap.icon}
+                    onChange={(e) => handleBoxOptionChange('recap', 'icon', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="\\faClipboardList">Liste</option>
+                    <option value="\\faFileAlt">Document</option>
+                    <option value="\\faTasks">Tâches</option>
+                    <option value="\\faListAlt">Liste alternative</option>
+                    <option value="\\faCheckSquare">Case cochée</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Style de bordure :</label>
+                  <select
+                    value={boxOptions.recap.border}
+                    onChange={(e) => handleBoxOptionChange('recap', 'border', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="boxrule=1pt">Simple (1pt)</option>
+                    <option value="boxrule=2pt,double">Double</option>
+                    <option value="boxrule=1pt,dotted">Pointillés</option>
+                    <option value="boxrule=1pt,dashed">Tirets</option>
+                    <option value="boxrule=3pt">Épais (3pt)</option>
+                  </select>
+                </div>
+
+                <div className="option-group">
+                  <label>Arrière-plan :</label>
+                  <select
+                    value={boxOptions.recap.background}
+                    onChange={(e) => handleBoxOptionChange('recap', 'background', e.target.value)}
+                    className="select-input"
+                  >
+                    <option value="">Uni (défaut)</option>
+                    <option value="grid">Grille</option>
+                    <option value="dots">Points</option>
+                    <option value="crosshatch">Hachures</option>
+                    <option value="gradient">Dégradé</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <button type="submit" disabled={loading || !file}>
+          {loading ? 'Traitement en cours...' : 'Générer le LaTeX'}
+        </button>
+
+        {response && (
+          <div className="download-section">
+            <button onClick={handleDownload} className="download-button">
+              Télécharger le fichier LaTeX
+            </button>
           </div>
         )}
       </form>
