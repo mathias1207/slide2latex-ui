@@ -5,7 +5,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #2e7d32;  /* Vert foncé */
+  background-color: #2e7d32 !important;  /* Vert foncé */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -26,6 +26,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: #2e7d32 !important;  /* Vert foncé */
 }
 
 #root {
@@ -33,6 +34,7 @@ body {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  background-color: #2e7d32 !important;  /* Vert foncé */
 }
 
 h1 {
@@ -63,7 +65,13 @@ button:focus-visible {
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
-    background-color: #81c784;  /* Vert clair */
+    background-color: #81c784 !important;  /* Vert clair */
+  }
+  body {
+    background-color: #81c784 !important;  /* Vert clair */
+  }
+  #root {
+    background-color: #81c784 !important;  /* Vert clair */
   }
   a:hover {
     color: #747bff;
