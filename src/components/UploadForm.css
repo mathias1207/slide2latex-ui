@@ -1,15 +1,17 @@
 .form-container {
   display: flex;
   justify-content: center;
+  align-items: center;
   padding: 2rem;
+  background-color: #2e7d32;
 }
 
 .upload-form {
   max-width: 600px;
   width: 100%;
-  background: white;
+  background-color: white;
   padding: 2rem;
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -27,6 +29,12 @@
   margin-bottom: 1.5rem;
   border: 1px solid #fecaca;
   font-size: 0.9rem;
+}
+
+.error-suggestion {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #666;
 }
 
 .form-group {
@@ -68,70 +76,54 @@
 .text-input,
 .select-input {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.5rem;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 4px;
   font-size: 1rem;
-  transition: border-color 0.3s ease;
-}
-
-.text-input:focus,
-.select-input:focus {
-  outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 }
 
 .submit-button {
-  width: 100%;
-  padding: 1rem;
-  background-color: #4a90e2;
+  background-color: #4CAF50;
   color: white;
+  padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  font-weight: 500;
+  border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  font-size: 1rem;
+  transition: background-color 0.3s;
 }
 
 .submit-button:hover {
-  background-color: #357abd;
+  background-color: #45a049;
 }
 
 .submit-button:disabled {
-  background-color: #ccc;
+  background-color: #cccccc;
   cursor: not-allowed;
 }
 
 .progress-container {
   margin-top: 1.5rem;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 5px;
 }
 
 .progress-bar {
   width: 100%;
-  height: 8px;
-  background-color: #e9ecef;
-  border-radius: 4px;
+  height: 20px;
+  background-color: #f0f0f0;
+  border-radius: 10px;
   overflow: hidden;
-  margin-bottom: 0.5rem;
 }
 
 .progress-fill {
   height: 100%;
-  background-color: #4a90e2;
-  border-radius: 4px;
+  background-color: #4CAF50;
   transition: width 0.3s ease;
 }
 
-.progress-status {
-  text-align: center;
-  color: #666;
+.status-message {
+  margin-top: 0.5rem;
   font-size: 0.9rem;
-  margin: 0;
+  color: #666;
 }
 
 .response-container {
@@ -158,9 +150,10 @@
 }
 
 .download-section {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #ddd;
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 5px;
 }
 
 .download-section .form-group {
@@ -168,29 +161,18 @@
 }
 
 .download-button {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: #28a745;
+  display: inline-block;
+  margin-top: 1rem;
+  text-decoration: none;
   color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  background-color: #4CAF50;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  transition: background-color 0.3s;
 }
 
 .download-button:hover {
-  background-color: #218838;
-}
-
-.download-button::before {
-  content: "↓";
-  font-size: 1.2rem;
+  background-color: #45a049;
 }
 
 .file-info {
