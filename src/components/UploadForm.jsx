@@ -3,12 +3,21 @@ import React, { useState, useEffect } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import './UploadForm.css';
 
+// URL du backend
+const BACKEND_URL = 'http://localhost:8000';
+
 function UploadForm() {
   const [file, setFile] = useState(null);
   const [courseTitle, setCourseTitle] = useState('');
   const [sourceLang, setSourceLang] = useState('french');
   const [targetLang, setTargetLang] = useState('french');
   const [vulgarizationLevel, setVulgarizationLevel] = useState(0);
+  const [includeRecap, setIncludeRecap] = useState(false);
+  const [boxStyles, setBoxStyles] = useState({
+    aretenir: 'yellow',
+    intuition: 'green',
+    vulgarisation: 'blue'
+  });
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState(null);
   const [downloadFileName, setDownloadFileName] = useState('');
@@ -68,7 +77,7 @@ function UploadForm() {
   const wakeUpServer = async () => {
     try {
       setStatus('Réveil du serveur...');
-      const res = await fetch('https://slide2latex-backend.onrender.com/health', {
+      const res = await fetch(`${BACKEND_URL}/health`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
@@ -121,7 +130,9 @@ function UploadForm() {
     // Réveiller le serveur avant de soumettre
     if (serverStatus !== 'ready') {
       setStatus('Réveil du serveur...');
+      console.log('Tentative de réveil du serveur...');
       const isReady = await wakeUpServer();
+      console.log('État du serveur après réveil:', isReady);
       if (!isReady) {
         setError('Impossible de réveiller le serveur. Veuillez réessayer dans quelques instants.');
         return;
@@ -134,6 +145,8 @@ function UploadForm() {
     formData.append('source_language', sourceLang);
     formData.append('target_language', targetLang);
     formData.append('vulgarization_level', vulgarizationLevel);
+    formData.append('include_recap', includeRecap);
+    formData.append('box_styles', JSON.stringify(boxStyles));
 
     setLoading(true);
     setProgress(0);
@@ -146,14 +159,17 @@ function UploadForm() {
       setStatus('Envoi du fichier au serveur...');
       setProgress(10);
       console.log('Envoi du fichier...');
+      console.log('URL du backend:', `${BACKEND_URL}/process/`);
 
-      const res = await fetchWithTimeout('https://slide2latex-backend.onrender.com/process/', {
+      const res = await fetchWithTimeout(`${BACKEND_URL}/process/`, {
         method: 'POST',
         body: formData,
       }, 300000);
 
+      console.log('Réponse du serveur:', res.status, res.statusText);
       if (!res.ok) {
         const errorData = await res.json();
+        console.error('Erreur détaillée du serveur:', errorData);
         throw new Error(errorData.detail || `Erreur serveur (${res.status}): ${res.statusText}`);
       }
 
@@ -177,11 +193,6 @@ function UploadForm() {
       // Attendre que le fichier soit prêt
       await new Promise(resolve => setTimeout(resolve, 5000));
 
-      // Étape 4: Téléchargement
-      setStatus('Préparation du téléchargement...');
-      setProgress(90);
-      await handleDownload();
-
       setStatus('Terminé avec succès !');
       setProgress(100);
 
@@ -203,18 +214,20 @@ function UploadForm() {
     try {
       setStatus('Téléchargement du fichier LaTeX...');
       console.log('Tentative de téléchargement pour file_id:', response.file_id);
+      console.log('URL de téléchargement:', `${BACKEND_URL}/download/${response.file_id}`);
 
       const res = await fetchWithTimeout(
-        `https://slide2latex-backend.onrender.com/download/${response.file_id}`,
+        `${BACKEND_URL}/download/${response.file_id}`,
         {
           method: 'GET',
           headers: {
             'Accept': 'text/plain'  // On attend un fichier .tex
           }
         },
-        60000  // Augmentation du timeout à 60 secondes
+        60000  // 60 secondes de timeout
       );
 
+      console.log('Réponse du serveur pour le téléchargement:', res.status, res.statusText);
       if (!res.ok) {
         const errorText = await res.text();
         console.error('Erreur de téléchargement:', errorText);
@@ -309,15 +322,138 @@ function UploadForm() {
         </div>
 
         <div className="form-group">
-          <label>Niveau de vulgarisation :</label>
-          <select value={vulgarizationLevel} onChange={(e) => setVulgarizationLevel(Number(e.target.value))} className="select-input">
-            <option value={0}>Aucune</option>
-            <option value={1}>Minimale</option>
-            <option value={2}>Légère</option>
-            <option value={3}>Modérée</option>
-            <option value={4}>Élevée</option>
-            <option value={5}>Maximale</option>
+          <label htmlFor="vulgarization">Niveau de vulgarisation :</label>
+          <select
+            id="vulgarization"
+            value={vulgarizationLevel}
+            onChange={(e) => setVulgarizationLevel(Number(e.target.value))}
+            className="form-control"
+          >
+            <option value={0}>Aucun</option>
+            <option value={1}>Minimal</option>
+            <option value={2}>Léger</option>
+            <option value={3}>Modéré</option>
+            <option value={4}>Élevé</option>
+            <option value={5}>Maximal</option>
           </select>
+        </div>
+
+        <div className="form-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={includeRecap}
+              onChange={(e) => setIncludeRecap(e.target.checked)}
+            />
+            Inclure une fiche récapitulative à la fin de chaque chapitre
+          </label>
+        </div>
+
+        <div className="form-group">
+          <h3>Styles des boîtes</h3>
+          
+          <div className="box-style-group">
+            <label>Style "À retenir" :</label>
+            <select
+              value={boxStyles.aretenir}
+              onChange={(e) => setBoxStyles({...boxStyles, aretenir: e.target.value})}
+              className="select-input"
+            >
+              <option value="yellow">Jaune (Classique)</option>
+              <option value="red">Rouge</option>
+              <option value="blue">Bleu</option>
+              <option value="green">Vert</option>
+              <option value="purple">Violet</option>
+              <option value="orange">Orange</option>
+            </select>
+          </div>
+
+          <div className="box-style-group">
+            <label>Style "Intuition" :</label>
+            <select
+              value={boxStyles.intuition}
+              onChange={(e) => setBoxStyles({...boxStyles, intuition: e.target.value})}
+              className="select-input"
+            >
+              <option value="green">Vert (Classique)</option>
+              <option value="yellow">Jaune</option>
+              <option value="blue">Bleu</option>
+              <option value="red">Rouge</option>
+              <option value="purple">Violet</option>
+              <option value="orange">Orange</option>
+            </select>
+          </div>
+
+          <div className="box-style-group">
+            <label>Style "Vulgarisation" :</label>
+            <select
+              value={boxStyles.vulgarisation}
+              onChange={(e) => setBoxStyles({...boxStyles, vulgarisation: e.target.value})}
+              className="select-input"
+            >
+              <option value="blue">Bleu (Classique)</option>
+              <option value="green">Vert</option>
+              <option value="yellow">Jaune</option>
+              <option value="red">Rouge</option>
+              <option value="purple">Violet</option>
+              <option value="orange">Orange</option>
+            </select>
+          </div>
+
+          <div className="box-preview">
+            <h4>Prévisualisation :</h4>
+            <div className="preview-container">
+              <div 
+                className="preview-box"
+                style={{
+                  backgroundColor: `${boxStyles.aretenir}15`,
+                  borderColor: `${boxStyles.aretenir}80`,
+                  borderLeft: `4px solid ${boxStyles.aretenir}`
+                }}
+              >
+                <div className="preview-title" style={{ color: `${boxStyles.aretenir}80` }}>
+                  <i className="fas fa-bookmark"></i> À retenir
+                </div>
+                <div className="preview-content">
+                  Ceci est un exemple de boîte "À retenir"
+                </div>
+              </div>
+
+              <div 
+                className="preview-box"
+                style={{
+                  backgroundColor: `${boxStyles.intuition}15`,
+                  borderColor: `${boxStyles.intuition}80`,
+                  borderLeft: `4px solid ${boxStyles.intuition}`
+                }}
+              >
+                <div className="preview-title" style={{ color: `${boxStyles.intuition}80` }}>
+                  <i className="fas fa-lightbulb"></i> Intuition
+                </div>
+                <div className="preview-content">
+                  Ceci est un exemple de boîte "Intuition"
+                </div>
+              </div>
+
+              {vulgarizationLevel > 0 && (
+                <div 
+                  className="preview-box"
+                  style={{
+                    backgroundColor: `${boxStyles.vulgarisation}15`,
+                    borderColor: `${boxStyles.vulgarisation}80`,
+                    borderLeft: `4px solid ${boxStyles.vulgarisation}`
+                  }}
+                >
+                  <div className="preview-title" style={{ color: `${boxStyles.vulgarisation}80` }}>
+                    <i className="fas fa-lightbulb"></i> Vulgarisation
+                  </div>
+                  <div className="preview-content">
+                    Ceci est un exemple de boîte "Vulgarisation"
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <button 
