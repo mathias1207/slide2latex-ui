@@ -10,6 +10,13 @@ import { FaUpload } from 'react-icons/fa';
 // URL du backend
 const BACKEND_URL = 'http://localhost:8000';
 
+// Formatage du temps en minutes et secondes
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}m ${remainingSeconds}s`;
+};
+
 const LoadingScreen = ({ status, progress, timeRemaining }) => {
   const getStatusEmoji = (status) => {
     if (status.includes('Réveil')) return '⚡';
@@ -25,9 +32,11 @@ const LoadingScreen = ({ status, progress, timeRemaining }) => {
     <div className="loading-screen">
       <div className="pen-animation" />
       <div className="loading-text">
-        {getStatusEmoji(status)} {status}
+        <div className="status-main">
+          {getStatusEmoji(status)} {status}
+        </div>
         {timeRemaining > 0 && (
-          <div style={{ marginTop: '0.5rem', fontSize: '1rem', opacity: '0.8' }}>
+          <div className="time-remaining">
             Temps restant estimé : {formatTime(timeRemaining)}
           </div>
         )}
@@ -174,13 +183,6 @@ function UploadForm() {
     }
     return () => clearInterval(timer);
   }, [loading, timeRemaining]);
-
-  // Formatage du temps en minutes et secondes
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}m ${remainingSeconds}s`;
-  };
 
   // Fonction pour réveiller le serveur
   const wakeUpServer = async () => {
