@@ -113,7 +113,10 @@ function UploadForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) return alert('Please upload a PDF');
+    if (!file) {
+      setError('Veuillez sélectionner un fichier PDF');
+      return;
+    }
 
     // Réveiller le serveur avant de soumettre
     if (serverStatus !== 'ready') {
@@ -135,51 +138,55 @@ function UploadForm() {
     setLoading(true);
     setProgress(0);
     setUploadProgress(0);
-    setStatus('Initialisation...');
+    setStatus('Préparation de l\'envoi...');
     setError(null);
 
-    // Définir le nom du fichier à l'avance
-    const fileName = `${courseTitle.replace(/\s+/g, '_').toLowerCase() || 'document'}.tex`;
-    setDownloadFileName(fileName);
-
     try {
-      setStatus('Envoi du fichier...');
+      // Étape 1: Envoi du fichier
+      setStatus('Envoi du fichier au serveur...');
       setProgress(10);
+      console.log('Envoi du fichier...');
 
       const res = await fetchWithTimeout('https://slide2latex-backend.onrender.com/process/', {
         method: 'POST',
         body: formData,
-      }, 300000); // 5 minutes de timeout
+      }, 300000);
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.detail || `Erreur serveur: ${res.status}`);
+        throw new Error(errorData.detail || `Erreur serveur (${res.status}): ${res.statusText}`);
       }
 
-      setStatus('Traitement en cours...');
+      // Étape 2: Traitement du fichier
+      setStatus('Traitement du fichier par le serveur...');
       setProgress(30);
+      console.log('Traitement en cours...');
 
       const data = await res.json();
+      console.log('Réponse du serveur:', data);
       setResponse(data);
 
-      // Simulation de la progression comme avant
-      const totalSteps = 10;
-      const stepDuration = 1000; // 1 seconde par étape
-      
-      for (let i = 0; i < totalSteps; i++) {
-        setStatus(`Traitement de la slide ${i + 1}/${totalSteps}...`);
-        setProgress(30 + (i * 7)); // De 30% à 100%
-        await new Promise(resolve => setTimeout(resolve, stepDuration));
+      if (!data.file_id) {
+        throw new Error('Le serveur n\'a pas retourné d\'identifiant de fichier');
       }
 
-      setStatus('Terminé !');
-      setProgress(100);
+      // Étape 3: Génération du fichier LaTeX
+      setStatus('Génération du fichier LaTeX...');
+      setProgress(60);
 
-      // Téléchargement automatique
+      // Attendre que le fichier soit prêt
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // Étape 4: Téléchargement
+      setStatus('Préparation du téléchargement...');
+      setProgress(90);
       await handleDownload();
 
+      setStatus('Terminé avec succès !');
+      setProgress(100);
+
     } catch (err) {
-      console.error('Upload failed', err);
+      console.error('Erreur détaillée:', err);
       setError(err.message);
       setStatus('Erreur lors du traitement');
     } finally {
@@ -194,47 +201,37 @@ function UploadForm() {
     }
     
     try {
-      setStatus('Téléchargement du fichier...');
+      setStatus('Téléchargement du fichier LaTeX...');
+      console.log('Tentative de téléchargement pour file_id:', response.file_id);
+
       const res = await fetchWithTimeout(
         `https://slide2latex-backend.onrender.com/download/${response.file_id}`,
         {
           method: 'GET',
           headers: {
-            'Accept': 'application/pdf'
+            'Accept': 'text/plain'  // On attend un fichier .tex
           }
         },
         30000
       );
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || `Erreur lors du téléchargement: ${res.status}`);
+        const errorText = await res.text();
+        console.error('Erreur de téléchargement:', errorText);
+        throw new Error(`Erreur lors du téléchargement (${res.status}): ${errorText}`);
       }
 
-      // Récupérer le type de contenu et le nom du fichier
-      const contentType = res.headers.get('content-type');
-      const contentDisposition = res.headers.get('content-disposition');
-      let filename = downloadFileName;
-
-      if (contentDisposition) {
-        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
-        if (matches != null && matches[1]) {
-          filename = matches[1].replace(/['"]/g, '');
-        }
-      }
-
-      // Créer le blob et le lien de téléchargement
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename;
+      a.download = `${courseTitle.replace(/\s+/g, '_').toLowerCase() || 'document'}.tex`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      setStatus('Téléchargement terminé !');
+      setStatus('Téléchargement terminé avec succès !');
     } catch (err) {
       console.error('Erreur lors du téléchargement:', err);
       setError(err.message);
