@@ -12,11 +12,15 @@ function UploadForm() {
   const [sourceLang, setSourceLang] = useState('french');
   const [targetLang, setTargetLang] = useState('french');
   const [vulgarizationLevel, setVulgarizationLevel] = useState(0);
+  const [includeIntuition, setIncludeIntuition] = useState(false);
+  const [includeRetenir, setIncludeRetenir] = useState(false);
+  const [includeVulgarisation, setIncludeVulgarisation] = useState(false);
   const [includeRecap, setIncludeRecap] = useState(false);
   const [boxStyles, setBoxStyles] = useState({
-    aretenir: 'yellow',
     intuition: 'green',
-    vulgarisation: 'blue'
+    retenir: 'yellow',
+    vulgarisation: 'blue',
+    recap: 'purple'
   });
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState(null);
@@ -144,9 +148,12 @@ function UploadForm() {
     formData.append('course_title', courseTitle);
     formData.append('source_language', sourceLang);
     formData.append('target_language', targetLang);
-    formData.append('vulgarization_level', vulgarizationLevel);
+    formData.append('include_intuition', includeIntuition);
+    formData.append('include_retenir', includeRetenir);
+    formData.append('include_vulgarisation', includeVulgarisation);
     formData.append('include_recap', includeRecap);
     formData.append('box_styles', JSON.stringify(boxStyles));
+    formData.append('vulgarization_level', vulgarizationLevel);
 
     setLoading(true);
     setProgress(0);
@@ -322,103 +329,126 @@ function UploadForm() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="vulgarization">Niveau de vulgarisation :</label>
-          <select
-            id="vulgarization"
-            value={vulgarizationLevel}
-            onChange={(e) => setVulgarizationLevel(Number(e.target.value))}
-            className="form-control"
-          >
-            <option value={0}>Aucun</option>
-            <option value={1}>Minimal</option>
-            <option value={2}>Léger</option>
-            <option value={3}>Modéré</option>
-            <option value={4}>Élevé</option>
-            <option value={5}>Maximal</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={includeRecap}
-              onChange={(e) => setIncludeRecap(e.target.checked)}
-            />
-            Inclure une fiche récapitulative à la fin de chaque chapitre
-          </label>
-        </div>
-
-        <div className="form-group">
-          <h3>Styles des boîtes</h3>
+          <h3>Options de génération</h3>
           
-          <div className="box-style-group">
-            <label>Style "À retenir" :</label>
-            <select
-              value={boxStyles.aretenir}
-              onChange={(e) => setBoxStyles({...boxStyles, aretenir: e.target.value})}
-              className="select-input"
-            >
-              <option value="yellow">Jaune (Classique)</option>
-              <option value="red">Rouge</option>
-              <option value="blue">Bleu</option>
-              <option value="green">Vert</option>
-              <option value="purple">Violet</option>
-              <option value="orange">Orange</option>
-            </select>
-          </div>
-
-          <div className="box-style-group">
-            <label>Style "Intuition" :</label>
-            <select
-              value={boxStyles.intuition}
-              onChange={(e) => setBoxStyles({...boxStyles, intuition: e.target.value})}
-              className="select-input"
-            >
-              <option value="green">Vert (Classique)</option>
-              <option value="yellow">Jaune</option>
-              <option value="blue">Bleu</option>
-              <option value="red">Rouge</option>
-              <option value="purple">Violet</option>
-              <option value="orange">Orange</option>
-            </select>
-          </div>
-
-          <div className="box-style-group">
-            <label>Style "Vulgarisation" :</label>
-            <select
-              value={boxStyles.vulgarisation}
-              onChange={(e) => setBoxStyles({...boxStyles, vulgarisation: e.target.value})}
-              className="select-input"
-            >
-              <option value="blue">Bleu (Classique)</option>
-              <option value="green">Vert</option>
-              <option value="yellow">Jaune</option>
-              <option value="red">Rouge</option>
-              <option value="purple">Violet</option>
-              <option value="orange">Orange</option>
-            </select>
-          </div>
-
-          <div className="box-preview">
-            <h4>Prévisualisation :</h4>
-            <div className="preview-container">
-              <div 
-                className="preview-box"
-                style={{
-                  backgroundColor: `${boxStyles.aretenir}15`,
-                  borderColor: `${boxStyles.aretenir}80`,
-                  borderLeft: `4px solid ${boxStyles.aretenir}`
-                }}
+          <div className="checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={includeIntuition}
+                onChange={(e) => setIncludeIntuition(e.target.checked)}
+              />
+              Inclure des boîtes "Intuition"
+            </label>
+            {includeIntuition && (
+              <select
+                value={boxStyles.intuition}
+                onChange={(e) => setBoxStyles({...boxStyles, intuition: e.target.value})}
+                className="select-input"
               >
-                <div className="preview-title" style={{ color: `${boxStyles.aretenir}80` }}>
-                  <i className="fas fa-bookmark"></i> À retenir
-                </div>
-                <div className="preview-content">
-                  Ceci est un exemple de boîte "À retenir"
-                </div>
-              </div>
+                <option value="green">Vert (Classique)</option>
+                <option value="yellow">Jaune</option>
+                <option value="blue">Bleu</option>
+                <option value="red">Rouge</option>
+                <option value="purple">Violet</option>
+                <option value="orange">Orange</option>
+              </select>
+            )}
+          </div>
 
+          <div className="checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={includeRetenir}
+                onChange={(e) => setIncludeRetenir(e.target.checked)}
+              />
+              Inclure des boîtes "À retenir"
+            </label>
+            {includeRetenir && (
+              <select
+                value={boxStyles.retenir}
+                onChange={(e) => setBoxStyles({...boxStyles, retenir: e.target.value})}
+                className="select-input"
+              >
+                <option value="yellow">Jaune (Classique)</option>
+                <option value="green">Vert</option>
+                <option value="blue">Bleu</option>
+                <option value="red">Rouge</option>
+                <option value="purple">Violet</option>
+                <option value="orange">Orange</option>
+              </select>
+            )}
+          </div>
+
+          <div className="checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={includeVulgarisation}
+                onChange={(e) => setIncludeVulgarisation(e.target.checked)}
+              />
+              Inclure des boîtes "Vulgarisation"
+            </label>
+            {includeVulgarisation && (
+              <div className="vulgarization-options">
+                <select
+                  value={boxStyles.vulgarisation}
+                  onChange={(e) => setBoxStyles({...boxStyles, vulgarisation: e.target.value})}
+                  className="select-input"
+                >
+                  <option value="blue">Bleu (Classique)</option>
+                  <option value="green">Vert</option>
+                  <option value="yellow">Jaune</option>
+                  <option value="red">Rouge</option>
+                  <option value="purple">Violet</option>
+                  <option value="orange">Orange</option>
+                </select>
+                <select
+                  value={vulgarizationLevel}
+                  onChange={(e) => setVulgarizationLevel(Number(e.target.value))}
+                  className="select-input"
+                >
+                  <option value={1}>Niveau 1 - Minimal</option>
+                  <option value={2}>Niveau 2 - Léger</option>
+                  <option value={3}>Niveau 3 - Modéré</option>
+                  <option value={4}>Niveau 4 - Élevé</option>
+                  <option value={5}>Niveau 5 - Maximal</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          <div className="checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={includeRecap}
+                onChange={(e) => setIncludeRecap(e.target.checked)}
+              />
+              Inclure des fiches récapitulatives
+            </label>
+            {includeRecap && (
+              <select
+                value={boxStyles.recap}
+                onChange={(e) => setBoxStyles({...boxStyles, recap: e.target.value})}
+                className="select-input"
+              >
+                <option value="purple">Violet (Classique)</option>
+                <option value="green">Vert</option>
+                <option value="blue">Bleu</option>
+                <option value="red">Rouge</option>
+                <option value="yellow">Jaune</option>
+                <option value="orange">Orange</option>
+              </select>
+            )}
+          </div>
+        </div>
+
+        <div className="box-preview">
+          <h4>Prévisualisation :</h4>
+          <div className="preview-container">
+            {includeIntuition && (
               <div 
                 className="preview-box"
                 style={{
@@ -434,25 +464,61 @@ function UploadForm() {
                   Ceci est un exemple de boîte "Intuition"
                 </div>
               </div>
+            )}
 
-              {vulgarizationLevel > 0 && (
-                <div 
-                  className="preview-box"
-                  style={{
-                    backgroundColor: `${boxStyles.vulgarisation}15`,
-                    borderColor: `${boxStyles.vulgarisation}80`,
-                    borderLeft: `4px solid ${boxStyles.vulgarisation}`
-                  }}
-                >
-                  <div className="preview-title" style={{ color: `${boxStyles.vulgarisation}80` }}>
-                    <i className="fas fa-lightbulb"></i> Vulgarisation
-                  </div>
-                  <div className="preview-content">
-                    Ceci est un exemple de boîte "Vulgarisation"
-                  </div>
+            {includeRetenir && (
+              <div 
+                className="preview-box"
+                style={{
+                  backgroundColor: `${boxStyles.retenir}15`,
+                  borderColor: `${boxStyles.retenir}80`,
+                  borderLeft: `4px solid ${boxStyles.retenir}`
+                }}
+              >
+                <div className="preview-title" style={{ color: `${boxStyles.retenir}80` }}>
+                  <i className="fas fa-bookmark"></i> À retenir
                 </div>
-              )}
-            </div>
+                <div className="preview-content">
+                  Ceci est un exemple de boîte "À retenir"
+                </div>
+              </div>
+            )}
+
+            {includeVulgarisation && (
+              <div 
+                className="preview-box"
+                style={{
+                  backgroundColor: `${boxStyles.vulgarisation}15`,
+                  borderColor: `${boxStyles.vulgarisation}80`,
+                  borderLeft: `4px solid ${boxStyles.vulgarisation}`
+                }}
+              >
+                <div className="preview-title" style={{ color: `${boxStyles.vulgarisation}80` }}>
+                  <i className="fas fa-comment"></i> Vulgarisation (Niveau {vulgarizationLevel})
+                </div>
+                <div className="preview-content">
+                  Ceci est un exemple de boîte "Vulgarisation"
+                </div>
+              </div>
+            )}
+
+            {includeRecap && (
+              <div 
+                className="preview-box"
+                style={{
+                  backgroundColor: `${boxStyles.recap}15`,
+                  borderColor: `${boxStyles.recap}80`,
+                  borderLeft: `4px solid ${boxStyles.recap}`
+                }}
+              >
+                <div className="preview-title" style={{ color: `${boxStyles.recap}80` }}>
+                  <i className="fas fa-clipboard-list"></i> Fiche Récapitulative
+                </div>
+                <div className="preview-content">
+                  Ceci est un exemple de fiche récapitulative
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
