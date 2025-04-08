@@ -11,19 +11,32 @@ import { FaUpload } from 'react-icons/fa';
 const BACKEND_URL = 'http://localhost:8000';
 
 const LoadingScreen = ({ status, progress, timeRemaining }) => {
+  const getStatusEmoji = (status) => {
+    if (status.includes('Réveil')) return '⚡';
+    if (status.includes('Envoi')) return '📤';
+    if (status.includes('Traitement')) return '⚙️';
+    if (status.includes('Génération')) return '📝';
+    if (status.includes('Terminé')) return '✨';
+    if (status.includes('Erreur')) return '❌';
+    return '🔄';
+  };
+
   return (
     <div className="loading-screen">
       <div className="pen-animation" />
       <div className="loading-text">
-        {status}
+        {getStatusEmoji(status)} {status}
         {timeRemaining > 0 && (
-          <div>
+          <div style={{ marginTop: '0.5rem', fontSize: '1rem', opacity: '0.8' }}>
             Temps restant estimé : {formatTime(timeRemaining)}
           </div>
         )}
       </div>
       <div className="progress-bar">
         <div className="progress-fill" style={{ width: `${progress}%` }} />
+      </div>
+      <div className="progress-status">
+        {progress}% complété
       </div>
     </div>
   );
