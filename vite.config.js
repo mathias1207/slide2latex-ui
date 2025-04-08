@@ -10,8 +10,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'pdf-lib': ['pdf-lib']
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'pdf-lib': ['pdf-lib'],
+          'ui-vendor': ['@chakra-ui/react', '@emotion/react', '@emotion/styled', 'framer-motion']
         }
       }
     },
