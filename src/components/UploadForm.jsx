@@ -209,7 +209,7 @@ function UploadForm() {
         {
           method: 'GET',
           headers: {
-            'Accept': 'application/pdf'  // On attend un fichier PDF
+            'Accept': 'text/plain'  // On attend un fichier .tex
           }
         },
         60000  // Augmentation du timeout à 60 secondes
@@ -225,7 +225,7 @@ function UploadForm() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${courseTitle.replace(/\s+/g, '_').toLowerCase() || 'document'}.pdf`;
+      a.download = downloadFileName || `${courseTitle.replace(/\s+/g, '_').toLowerCase() || 'document'}.tex`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
