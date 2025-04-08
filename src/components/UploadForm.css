@@ -61,7 +61,8 @@ select,
   border: 1.5px solid #E0E0E0;
   border-radius: 8px;
   font-size: 0.95rem;
-  color: var(--text-color);
+  color: #333;
+  background-color: white;
   transition: var(--transition);
 }
 
@@ -79,6 +80,7 @@ select:focus,
   padding: 1.5rem;
   margin-bottom: 2rem;
   border: 1.5px solid #E0E0E0;
+  background-color: white;
 }
 
 .checkbox-label {
@@ -108,6 +110,7 @@ select:focus,
   padding: 1.5rem;
   border-radius: 12px;
   border: 1.5px solid #E0E0E0;
+  background-color: white;
 }
 
 .box-options h4 {
@@ -390,7 +393,7 @@ button:disabled {
 .vulgarization-options {
   margin: 1rem 0;
   padding: 1rem;
-  background-color: #f8f9fa;
+  background-color: white;
   border-radius: 4px;
   border: 1px solid #e9ecef;
 }
