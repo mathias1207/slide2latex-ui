@@ -209,10 +209,10 @@ function UploadForm() {
         {
           method: 'GET',
           headers: {
-            'Accept': 'text/plain'  // On attend un fichier .tex
+            'Accept': 'application/pdf'  // On attend un fichier PDF
           }
         },
-        30000
+        60000  // Augmentation du timeout à 60 secondes
       );
 
       if (!res.ok) {
@@ -225,7 +225,7 @@ function UploadForm() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${courseTitle.replace(/\s+/g, '_').toLowerCase() || 'document'}.tex`;
+      a.download = `${courseTitle.replace(/\s+/g, '_').toLowerCase() || 'document'}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
