@@ -189,6 +189,59 @@ const formatTimeRange = (minutes) => {
   return `${lowerBound}-${upperBound} min`;
 };
 
+// Ajouter cette fonction getFontFamily juste avant le composant UploadForm
+const getFontFamily = (font) => {
+  switch (font) {
+    case 'lmr': return 'serif';
+    case 'phv': return 'Helvetica, Arial, sans-serif';
+    case 'ptm': return 'Times New Roman, serif';
+    case 'ppl': return 'Palatino, serif';
+    case 'pbk': return 'Bookman, serif';
+    default: return 'serif';
+  }
+};
+
+// Définir la table de correspondance des icônes en dehors des fonctions pour la rendre accessible
+const iconMap = {
+  // Intuition
+  '\\faLightbulb': '💡',
+  '\\faThoughtBubble': '💭',
+  '\\faBrain': '🧠',
+  '\\faCompass': '🧭',
+  '\\faMagic': '✨',
+  
+  // À retenir
+  '\\faBookmark': '🔖',
+  '\\faCheck': '✓',
+  '\\faStar': '⭐',
+  '\\faExclamation': '❗',
+  '\\faMemory': '🧠',
+  
+  // Vulgarisation
+  '\\faComment': '💬',
+  '\\faInfoCircle': 'ℹ️',
+  '\\faQuestionCircle': '❓',
+  '\\faGlasses': '👓',
+  '\\faHandPointRight': '👉',
+  
+  // Récap
+  '\\faClipboardList': '📋',
+  '\\faListAlt': '📄',
+  '\\faTasks': '✓',
+  '\\faFileAlt': '📝',
+  '\\faChartBar': '📊',
+};
+
+const getIconDisplay = (iconCode) => {
+  if (!iconCode) return '•'; // Icône par défaut si undefined ou vide
+
+  // Normaliser le code (supprimer les espaces de début/fin)
+  const normalizedCode = iconCode.trim();
+  
+  // Obtenir l'icône correspondante ou revenir à l'icône par défaut
+  return iconMap[normalizedCode] || '•';
+};
+
 function UploadForm() {
   const [file, setFile] = useState(null);
   const [courseTitle, setCourseTitle] = useState('');
@@ -420,6 +473,15 @@ function UploadForm() {
       setProgress(10);
       console.log('Envoi du fichier...');
       console.log('URL du backend:', `${BACKEND_URL}/process/`);
+      
+      // Log des options de boîtes pour le débogage
+      console.log('Configuration des boîtes envoyée au serveur:');
+      console.log('Styles des boîtes:', boxStyles);
+      console.log('Options détaillées des boîtes:', boxOptions);
+      console.log('Intuition activée:', includeIntuition);
+      console.log('À retenir activé:', includeRetenir);
+      console.log('Vulgarisation activée:', includeVulgarisation);
+      console.log('Récap activé:', includeRecap);
 
       const res = await fetchWithTimeout(`${BACKEND_URL}/process/`, {
         method: 'POST',
@@ -616,13 +678,41 @@ function UploadForm() {
   };
 
   const handleBoxOptionChange = (boxType, optionType, value) => {
-    setBoxOptions(prev => ({
-      ...prev,
-      [boxType]: {
-        ...prev[boxType],
-        [optionType]: value
+    console.log(`Changement d'option: type=${boxType}, option=${optionType}, valeur=${value}`);
+    
+    // Prétraitement de la valeur pour les icônes
+    let processedValue = value;
+    
+    if (optionType === 'icon') {
+      // Pour les icônes, vérifier qu'elles sont bien formatées
+      // Les icônes FontAwesome doivent commencer par \fa
+      if (!value.startsWith('\\fa')) {
+        console.warn(`Format d'icône incorrect: ${value}, ajout du préfixe \\fa`);
+        processedValue = `\\fa${value}`;
       }
-    }));
+      
+      const iconDisplay = getIconDisplay(processedValue);
+      console.log(`Icône sélectionnée: ${processedValue} -> Affichage: ${iconDisplay}`);
+      
+      if (iconDisplay === '•') {
+        console.warn(`Attention: l'icône ${processedValue} n'est pas reconnue dans la table de correspondance`);
+        // Liste des icônes disponibles pour aider au débogage
+        console.log('Icônes disponibles:', Object.keys(iconMap).join(', '));
+      }
+    }
+    
+    // Mettre à jour l'état avec la nouvelle valeur (prétraitée si nécessaire)
+    setBoxOptions(prev => {
+      const newOptions = {
+        ...prev,
+        [boxType]: {
+          ...prev[boxType],
+          [optionType]: processedValue
+        }
+      };
+      console.log('Nouvelles options:', JSON.stringify(newOptions));
+      return newOptions;
+    });
   };
 
   return (
@@ -1102,16 +1192,31 @@ function UploadForm() {
         <div className="modal-content">
           <div className="box-preview">
             <h4>Aperçu</h4>
-            <div className="preview-box" style={{backgroundColor: `${boxStyles.intuition}!5!white`, borderColor: `${boxStyles.intuition}`}}>
-              <div className="preview-title" style={{borderColor: `${boxStyles.intuition}`, backgroundColor: 'white'}}>
-                {boxOptions.intuition.icon === '\\faLightbulb' && '💡'} 
-                {boxOptions.intuition.icon === '\\faThoughtBubble' && '💭'}
-                {boxOptions.intuition.icon === '\\faBrain' && '🧠'}
-                {boxOptions.intuition.icon === '\\faCompass' && '🧭'}
-                {boxOptions.intuition.icon === '\\faMagic' && '✨'} 
-                Intuition
+            <div className="preview-box" style={{
+              backgroundColor: `${boxStyles.intuition}!5!white`, 
+              borderColor: `${boxStyles.intuition}`,
+              borderWidth: boxOptions.intuition.border.includes('3pt') ? '3px' : 
+                           boxOptions.intuition.border.includes('2pt') ? '2px' : '1px',
+              borderStyle: boxOptions.intuition.border.includes('dotted') ? 'dotted' : 
+                           boxOptions.intuition.border.includes('dashed') ? 'dashed' : 
+                           boxOptions.intuition.border.includes('double') ? 'double' : 'solid',
+              ...(boxOptions.intuition.background === 'grid' && {backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)', backgroundSize: '10px 10px'}),
+              ...(boxOptions.intuition.background === 'dots' && {backgroundImage: 'radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px)', backgroundSize: '8px 8px'}),
+              ...(boxOptions.intuition.background === 'crosshatch' && {backgroundImage: 'repeating-linear-gradient(45deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 5px, transparent 5px, transparent 10px)'}),
+              ...(boxOptions.intuition.background === 'gradient' && {background: `linear-gradient(to right, ${boxStyles.intuition}!2!white, white)`})
+            }}>
+              <div className="preview-title" style={{
+                borderColor: `${boxStyles.intuition}`, 
+                backgroundColor: 'white',
+                fontFamily: getFontFamily(boxOptions.intuition.titleFont)
+              }}>
+                {iconMap[boxOptions.intuition.icon] || '•'} Intuition
               </div>
-              <div className="preview-content">
+              <div className="preview-content" style={{
+                fontFamily: getFontFamily(boxOptions.intuition.contentFont),
+                padding: '10px',
+                marginTop: '8px'
+              }}>
                 Cette boîte fournit une explication intuitive du concept abordé dans cette section. Elle aide à comprendre l'idée de manière plus concrète.
               </div>
             </div>
@@ -1228,16 +1333,31 @@ function UploadForm() {
         <div className="modal-content">
           <div className="box-preview">
             <h4>Aperçu</h4>
-            <div className="preview-box" style={{backgroundColor: `${boxStyles.retenir}!5!white`, borderColor: `${boxStyles.retenir}`}}>
-              <div className="preview-title" style={{borderColor: `${boxStyles.retenir}`, backgroundColor: 'white'}}>
-                {boxOptions.retenir.icon === '\\faBookmark' && '🔖'} 
-                {boxOptions.retenir.icon === '\\faCheck' && '✓'}
-                {boxOptions.retenir.icon === '\\faStar' && '⭐'}
-                {boxOptions.retenir.icon === '\\faExclamation' && '❗'}
-                {boxOptions.retenir.icon === '\\faMemory' && '🧠'} 
-                À retenir
+            <div className="preview-box" style={{
+              backgroundColor: `${boxStyles.retenir}!5!white`, 
+              borderColor: `${boxStyles.retenir}`,
+              borderWidth: boxOptions.retenir.border.includes('3pt') ? '3px' : 
+                           boxOptions.retenir.border.includes('2pt') ? '2px' : '1px',
+              borderStyle: boxOptions.retenir.border.includes('dotted') ? 'dotted' : 
+                           boxOptions.retenir.border.includes('dashed') ? 'dashed' : 
+                           boxOptions.retenir.border.includes('double') ? 'double' : 'solid',
+              ...(boxOptions.retenir.background === 'grid' && {backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)', backgroundSize: '10px 10px'}),
+              ...(boxOptions.retenir.background === 'dots' && {backgroundImage: 'radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px)', backgroundSize: '8px 8px'}),
+              ...(boxOptions.retenir.background === 'crosshatch' && {backgroundImage: 'repeating-linear-gradient(45deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 5px, transparent 5px, transparent 10px)'}),
+              ...(boxOptions.retenir.background === 'gradient' && {background: `linear-gradient(to right, ${boxStyles.retenir}!2!white, white)`})
+            }}>
+              <div className="preview-title" style={{
+                borderColor: `${boxStyles.retenir}`, 
+                backgroundColor: 'white',
+                fontFamily: getFontFamily(boxOptions.retenir.titleFont)
+              }}>
+                {iconMap[boxOptions.retenir.icon] || '•'} À retenir
               </div>
-              <div className="preview-content">
+              <div className="preview-content" style={{
+                fontFamily: getFontFamily(boxOptions.retenir.contentFont),
+                padding: '10px',
+                marginTop: '8px'
+              }}>
                 Cette boîte contient les points essentiels à retenir de cette section. Elle résume les formules et définitions clés.
               </div>
             </div>
@@ -1354,16 +1474,31 @@ function UploadForm() {
         <div className="modal-content">
           <div className="box-preview">
             <h4>Aperçu</h4>
-            <div className="preview-box" style={{backgroundColor: `${boxStyles.vulgarisation}!5!white`, borderColor: `${boxStyles.vulgarisation}`}}>
-              <div className="preview-title" style={{borderColor: `${boxStyles.vulgarisation}`, backgroundColor: 'white'}}>
-                {boxOptions.vulgarisation.icon === '\\faComment' && '💬'} 
-                {boxOptions.vulgarisation.icon === '\\faInfoCircle' && 'ℹ️'}
-                {boxOptions.vulgarisation.icon === '\\faQuestionCircle' && '❓'}
-                {boxOptions.vulgarisation.icon === '\\faGlasses' && '👓'}
-                {boxOptions.vulgarisation.icon === '\\faHandPointRight' && '👉'} 
-                Vulgarisation simple
+            <div className="preview-box" style={{
+              backgroundColor: `${boxStyles.vulgarisation}!5!white`, 
+              borderColor: `${boxStyles.vulgarisation}`,
+              borderWidth: boxOptions.vulgarisation.border.includes('3pt') ? '3px' : 
+                           boxOptions.vulgarisation.border.includes('2pt') ? '2px' : '1px',
+              borderStyle: boxOptions.vulgarisation.border.includes('dotted') ? 'dotted' : 
+                           boxOptions.vulgarisation.border.includes('dashed') ? 'dashed' : 
+                           boxOptions.vulgarisation.border.includes('double') ? 'double' : 'solid',
+              ...(boxOptions.vulgarisation.background === 'grid' && {backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)', backgroundSize: '10px 10px'}),
+              ...(boxOptions.vulgarisation.background === 'dots' && {backgroundImage: 'radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px)', backgroundSize: '8px 8px'}),
+              ...(boxOptions.vulgarisation.background === 'crosshatch' && {backgroundImage: 'repeating-linear-gradient(45deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 5px, transparent 5px, transparent 10px)'}),
+              ...(boxOptions.vulgarisation.background === 'gradient' && {background: `linear-gradient(to right, ${boxStyles.vulgarisation}!2!white, white)`})
+            }}>
+              <div className="preview-title" style={{
+                borderColor: `${boxStyles.vulgarisation}`, 
+                backgroundColor: 'white',
+                fontFamily: getFontFamily(boxOptions.vulgarisation.titleFont)
+              }}>
+                {iconMap[boxOptions.vulgarisation.icon] || '•'} Vulgarisation simple
               </div>
-              <div className="preview-content">
+              <div className="preview-content" style={{
+                fontFamily: getFontFamily(boxOptions.vulgarisation.contentFont),
+                padding: '10px',
+                marginTop: '8px'
+              }}>
                 Cette boîte explique les concepts de façon simplifiée. Elle utilise des analogies et un vocabulaire accessible pour faciliter la compréhension.
               </div>
             </div>
@@ -1480,16 +1615,31 @@ function UploadForm() {
         <div className="modal-content">
           <div className="box-preview">
             <h4>Aperçu</h4>
-            <div className="preview-box" style={{backgroundColor: `${boxStyles.recap}!5!white`, borderColor: `${boxStyles.recap}`}}>
-              <div className="preview-title" style={{borderColor: `${boxStyles.recap}`, backgroundColor: 'white'}}>
-                {boxOptions.recap.icon === '\\faClipboardList' && '📋'} 
-                {boxOptions.recap.icon === '\\faListAlt' && '📄'}
-                {boxOptions.recap.icon === '\\faTasks' && '✓'}
-                {boxOptions.recap.icon === '\\faFileAlt' && '📝'}
-                {boxOptions.recap.icon === '\\faChartBar' && '📊'} 
-                Fiche Récapitulative
+            <div className="preview-box" style={{
+              backgroundColor: `${boxStyles.recap}!5!white`, 
+              borderColor: `${boxStyles.recap}`,
+              borderWidth: boxOptions.recap.border.includes('3pt') ? '3px' : 
+                           boxOptions.recap.border.includes('2pt') ? '2px' : '1px',
+              borderStyle: boxOptions.recap.border.includes('dotted') ? 'dotted' : 
+                           boxOptions.recap.border.includes('dashed') ? 'dashed' : 
+                           boxOptions.recap.border.includes('double') ? 'double' : 'solid',
+              ...(boxOptions.recap.background === 'grid' && {backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)', backgroundSize: '10px 10px'}),
+              ...(boxOptions.recap.background === 'dots' && {backgroundImage: 'radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px)', backgroundSize: '8px 8px'}),
+              ...(boxOptions.recap.background === 'crosshatch' && {backgroundImage: 'repeating-linear-gradient(45deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 5px, transparent 5px, transparent 10px)'}),
+              ...(boxOptions.recap.background === 'gradient' && {background: `linear-gradient(to right, ${boxStyles.recap}!2!white, white)`})
+            }}>
+              <div className="preview-title" style={{
+                borderColor: `${boxStyles.recap}`, 
+                backgroundColor: 'white',
+                fontFamily: getFontFamily(boxOptions.recap.titleFont)
+              }}>
+                {iconMap[boxOptions.recap.icon] || '•'} Fiche Récapitulative
               </div>
-              <div className="preview-content">
+              <div className="preview-content" style={{
+                fontFamily: getFontFamily(boxOptions.recap.contentFont),
+                padding: '10px',
+                marginTop: '8px'
+              }}>
                 <p><strong>Objectif :</strong> Résumer le concept principal de cette section.</p>
                 <p><strong>Principe central :</strong> Explication concise de l'idée fondamentale.</p>
                 <p><strong>Points essentiels :</strong></p>
